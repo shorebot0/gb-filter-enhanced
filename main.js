@@ -2,7 +2,7 @@
 // メイン処理
 // ------------------------------------------------------------------------------------------------
 
-// VER CHECK 22MAY2026.1407
+// VER CHECK 22MAY2026.1410
 
 // -------------------------------------------------------------------------------------------
 // グローバルな変数
@@ -21,6 +21,10 @@ onload = function()
 {
 	// GL関係のインスタンスを生成
 	var gl = new yrGL("canvas_main");
+	
+	// 22MAY2026: Force WebGL to keep pixels memory readable for downloading snapshots
+	gl._gl = gl._canvas.getContext("webgl", { preserveDrawingBuffer: true }) || gl._canvas.getContext("experimental-webgl", { preserveDrawingBuffer: true });
+	
 	var renderer = gl.createRenderer();										// レンダラ―
 	var material_imaged = gl.createMaterial(vs_imaged, fs_imaged);			// マテリアル
 	var material_gbfilter = gl.createMaterial(vs_gbfilter, fs_gbfilter);	// 
