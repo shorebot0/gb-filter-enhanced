@@ -2,7 +2,7 @@
 // メイン処理
 // ------------------------------------------------------------------------------------------------
 
-// VER CHECK 22MAY2026.1424
+// VER CHECK 22MAY2026.1426
 
 // -------------------------------------------------------------------------------------------
 // グローバルな変数
@@ -14,6 +14,8 @@ var filter_color_r = 0.0;    // フィルターカラー
 var filter_color_g = 0.0;    // 
 var filter_color_b = 0.0;    // 
 
+// === NEW: Global cache for holding the raw WebGL image data URL ===
+var lastWebGLDataURL = "";
 
 // -------------------------------------------------------------------------------------------
 // ページ読み込み完了イベント
@@ -21,12 +23,6 @@ onload = function()
 {
     // GL関係のインスタンスを生成
     var gl = new yrGL("canvas_main");
-    
-    // === FIX: Force WebGL to keep pixel memory readable before rendering loop runs ===
-    if (gl._canvas) {
-        gl._gl = gl._canvas.getContext("webgl", { preserveDrawingBuffer: true }) || 
-                 gl._canvas.getContext("experimental-webgl", { preserveDrawingBuffer: true });
-    }
     
     var renderer = gl.createRenderer();                                                                    // レンダラ―
     var material_imaged = gl.createMaterial(vs_imaged, fs_imaged);            // マテリアル
@@ -184,6 +180,11 @@ onload = function()
         // バッファリングされたWebGLコマンドをただちに実行する
         renderer.flush();
 
+        // === FIX: Capture the WebGL graphics IMMEDIATELY while the buffer is active ===
+        if (gl._canvas) {
+            lastWebGLDataURL = gl._canvas.toDataURL("image/png");
+        }
+
         // --- LIVE RENDERING FOR THE TEXTBOX OVERLAY ---
         const visualOverlay = document.getElementById("gb-visual-overlay");
         const inputField = document.getElementById("live-gb-text");
@@ -277,7 +278,7 @@ window.generateDownload = function(linkElement) {
     const webglCanvas = document.getElementById("canvas_main");
     const textCanvas = document.getElementById("gb-visual-overlay");
     
-    if (!webglCanvas) return;
+    if (!webglCanvas || !lastWebGLDataURL) return;
 
     // Create our temporary canvas to flatten both images together cleanly
     const exportCanvas = document.createElement("canvas");
@@ -285,14 +286,24 @@ window.generateDownload = function(linkElement) {
     exportCanvas.height = webglCanvas.height;
     const ctx = exportCanvas.getContext("2d");
 
-    // 1. Snapshot the retro filter layer (Will now successfully read pixels)
-    ctx.drawImage(webglCanvas, 0, 0);
+    // Create an image element to draw our cached real-time frame snapshot
+    const webglImageCache = new Image();
+    webglImageCache.src = lastWebGLDataURL;
+    
+    // Once the background cache image has mapped layout, merge them
+    webglImageCache.onload = function() {
+        // 1. Draw the game/retro filter layer from our fresh cache
+        ctx.drawImage(webglImageCache, 0, 0);
 
-    // 2. Snapshot the dialogue canvas overlay layout
-    if (textCanvas) {
-        ctx.drawImage(textCanvas, 0, 0);
-    }
+        // 2. Snapshot the dialogue canvas overlay layout directly over it
+        if (textCanvas) {
+            ctx.drawImage(textCanvas, 0, 0);
+        }
 
-    // 3. Inject the combined base64 data payload back into the link asset
-    linkElement.href = exportCanvas.toDataURL("image/png");
+        // 3. Inject the combined base64 data payload back into the link asset
+        linkElement.href = exportCanvas.toDataURL("image/png");
+    };
+    
+    // Trigger download generation logic synchronously
+    webglImageCache.dispatchEvent(new Event('load'));
 };
