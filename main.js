@@ -2,7 +2,7 @@
 // メイン処理
 // ------------------------------------------------------------------------------------------------
 
-// VER CHECK 22MAY2026.1426
+// VER CHECK 22MAY2026.1430
 
 // -------------------------------------------------------------------------------------------
 // グローバルな変数
@@ -14,7 +14,7 @@ var filter_color_r = 0.0;    // フィルターカラー
 var filter_color_g = 0.0;    // 
 var filter_color_b = 0.0;    // 
 
-// === NEW: Global cache for holding the raw WebGL image data URL ===
+// Real-time frame storage string
 var lastWebGLDataURL = "";
 
 // -------------------------------------------------------------------------------------------
@@ -180,7 +180,7 @@ onload = function()
         // バッファリングされたWebGLコマンドをただちに実行する
         renderer.flush();
 
-        // === FIX: Capture the WebGL graphics IMMEDIATELY while the buffer is active ===
+        // Capture the raw filtered WebGL frame while active
         if (gl._canvas) {
             lastWebGLDataURL = gl._canvas.toDataURL("image/png");
         }
@@ -273,37 +273,43 @@ onload = function()
     }
 };
 
-// --- DYNAMIC COMBINED DOWNLOAD HANDLER ---
-window.generateDownload = function(linkElement) {
+// --- FIXED ASYNC COMBINED DOWNLOAD HANDLER ---
+window.generateDownload = function(linkElement, event) {
+    // Stop the default browser action immediately so we can compile asynchronously
+    if (event && event.preventDefault) {
+        event.preventDefault();
+    }
+
     const webglCanvas = document.getElementById("canvas_main");
     const textCanvas = document.getElementById("gb-visual-overlay");
     
     if (!webglCanvas || !lastWebGLDataURL) return;
 
-    // Create our temporary canvas to flatten both images together cleanly
-    const exportCanvas = document.createElement("canvas");
-    exportCanvas.width = webglCanvas.width;
-    exportCanvas.height = webglCanvas.height;
-    const ctx = exportCanvas.getContext("2d");
-
-    // Create an image element to draw our cached real-time frame snapshot
+    // Create a background image cache for the WebGL layer
     const webglImageCache = new Image();
     webglImageCache.src = lastWebGLDataURL;
     
-    // Once the background cache image has mapped layout, merge them
     webglImageCache.onload = function() {
-        // 1. Draw the game/retro filter layer from our fresh cache
+        // Create our temporary composition canvas inside the safe async lifecycle
+        const exportCanvas = document.createElement("canvas");
+        exportCanvas.width = webglCanvas.width;
+        exportCanvas.height = webglCanvas.height;
+        const ctx = exportCanvas.getContext("2d");
+
+        // 1. Draw the game filter background image
         ctx.drawImage(webglImageCache, 0, 0);
 
-        // 2. Snapshot the dialogue canvas overlay layout directly over it
+        // 2. Overlay the dialogue panel canvas
         if (textCanvas) {
             ctx.drawImage(textCanvas, 0, 0);
         }
 
-        // 3. Inject the combined base64 data payload back into the link asset
-        linkElement.href = exportCanvas.toDataURL("image/png");
+        // 3. Generate a temporary download link element and trigger a program click
+        const temporaryLink = document.createElement("a");
+        temporaryLink.download = linkElement.download || "gameboy-snapshot.png";
+        temporaryLink.href = exportCanvas.toDataURL("image/png");
+        document.body.appendChild(temporaryLink);
+        temporaryLink.click();
+        document.body.removeChild(temporaryLink);
     };
-    
-    // Trigger download generation logic synchronously
-    webglImageCache.dispatchEvent(new Event('load'));
 };
