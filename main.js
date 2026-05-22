@@ -2,7 +2,7 @@
 // メイン処理
 // ------------------------------------------------------------------------------------------------
 
-// VER CHECK 22MAY2026.1430
+// VER CHECK 22MAY2026.1635
 
 // -------------------------------------------------------------------------------------------
 // グローバルな変数
@@ -233,7 +233,6 @@ onload = function()
                 textCtx.fillStyle = colorBlack;
                 const fontSize = Math.floor(boxHeight * 0.22); 
                 textCtx.font = `bold ${fontSize}px "Press Start 2P", monospace`;
-                textCtx.textBaseline = "top";
 
                 const maxTextWidth = boxWidth - 28;
                 let lines = [];
@@ -263,8 +262,17 @@ onload = function()
                 }
                 lines.push(currentLine);
 
-                for (let j = 0; j < Math.min(lines.length, 2); j++) {
-                    textCtx.fillText(lines[j].trim(), boxX + 14, boxY + 12 + (j * fontSize * 1.5));
+                // === MODIFIED SECTION: Centering Text Vertically ===
+                const lineCount = Math.min(lines.length, 2);
+                const lineSpacing = 1.4;
+                const totalTextHeight = lineCount * fontSize * lineSpacing;
+                const centeredYStart = (boxY + (boxHeight / 2)) - (totalTextHeight / 2);
+
+                textCtx.textBaseline = "middle";
+
+                for (let j = 0; j < lineCount; j++) {
+                    const currentLineY = centeredYStart + (j * fontSize * lineSpacing) + (fontSize / 2);
+                    textCtx.fillText(lines[j].trim(), boxX + 14, currentLineY);
                 }
             }
         }
