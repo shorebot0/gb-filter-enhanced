@@ -2,7 +2,7 @@
 // メイン処理
 // ------------------------------------------------------------------------------------------------
 
-// VER CHECK 22MAY2026.1415
+// VER CHECK 22MAY2026.1418
 
 // -------------------------------------------------------------------------------------------
 // グローバルな変数
@@ -23,7 +23,7 @@ onload = function()
 	var gl = new yrGL("canvas_main");
 	
 	// 22MAY2026: Force WebGL to keep pixels memory readable for downloading snapshots
-	gl._gl = gl._canvas.getContext("webgl", { preserveDrawingBuffer: true }) || gl._canvas.getContext("experimental-webgl", { preserveDrawingBuffer: true });
+	// DEPRECATED: gl._gl = gl._canvas.getContext("webgl", { preserveDrawingBuffer: true }) || gl._canvas.getContext("experimental-webgl", { preserveDrawingBuffer: true });
 	
 	var renderer = gl.createRenderer();										// レンダラ―
 	var material_imaged = gl.createMaterial(vs_imaged, fs_imaged);			// マテリアル
@@ -276,7 +276,18 @@ window.generateDownload = function(linkElement) {
     
     if (!webglCanvas) return;
 
-    // Create our temporary canvas to flatten both images together
+    // Force a fresh render layout flag update just before snapshotting
+    const glContext = webglCanvas.getContext("webgl") || webglCanvas.getContext("experimental-webgl");
+    if (glContext) {
+        // Tweak the live buffer parameters on the fly to allow image data exports
+        const attributes = glContext.getContextAttributes();
+        if (attributes && !attributes.preserveDrawingBuffer) {
+            // If the buffer isn't preserved natively, pull data directly via the viewport canvas context
+            linkElement.href = webglCanvas.toDataURL("image/png");
+        }
+    }
+
+    // Create our temporary canvas to flatten both images together cleanly
     const exportCanvas = document.createElement("canvas");
     exportCanvas.width = webglCanvas.width;
     exportCanvas.height = webglCanvas.height;
@@ -290,6 +301,6 @@ window.generateDownload = function(linkElement) {
         ctx.drawImage(textCanvas, 0, 0);
     }
 
-    // 3. Inject the data payload directly into the tag's clicked href handler
+    // 3. Inject the combined base64 data payload back into the link asset
     linkElement.href = exportCanvas.toDataURL("image/png");
 };
