@@ -25,6 +25,8 @@ onload = function()
 	var material_gbfilter = gl.createMaterial(vs_gbfilter, fs_gbfilter);	// 
 	var geometry_square = gl.createGeometrySquare(1.0, true, false);		// ジオメトリ
 	var texture = gl.createTexture("gb.jpg");								// テクスチャ
+	// Fix security blocking on forks --added 22MAY2026
+	gl._gl.pixelStorei(gl._gl.UNPACK_FLIP_Y_WEBGL, true);
 
 	// タイマー
 	var timer = new yrTimer();
@@ -194,9 +196,13 @@ onload = function()
         textCtx.clearRect(0, 0, visualOverlay.width, visualOverlay.height);
 
         // Dynamic palette pulling from site's variables
-        const baseR = typeof window.filter_color_r !== 'undefined' ? window.filter_color_r : 0.6;
-        const baseG = typeof window.filter_color_g !== 'undefined' ? window.filter_color_g : 0.73;
-        const baseB = typeof window.filter_color_b !== 'undefined' ? window.filter_color_b : 0.05;
+        //const baseR = typeof window.filter_color_r !== 'undefined' ? window.filter_color_r : 0.6;
+        //const baseG = typeof window.filter_color_g !== 'undefined' ? window.filter_color_g : 0.73;
+        //const baseB = typeof window.filter_color_b !== 'undefined' ? window.filter_color_b : 0.05;
+		//added 22MAY2026
+		const baseR = typeof filter_color_r !== 'undefined' ? filter_color_r : 0.6;
+		const baseG = typeof filter_color_g !== 'undefined' ? filter_color_g : 0.73;
+		const baseB = typeof filter_color_b !== 'undefined' ? filter_color_b : 0.05;
 
         const luminance = (0.2126 * baseR) + (0.7152 * baseG) + (0.0722 * baseB);
         let colorWhite, colorBlack;
