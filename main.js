@@ -270,26 +270,26 @@ onload = function()
 };
 
 // --- DYNAMIC COMBINED DOWNLOAD HANDLER ---
-document.getElementById("download_link").addEventListener("click", function(e) {
+window.generateDownload = function(linkElement) {
     const webglCanvas = document.getElementById("canvas_main");
     const textCanvas = document.getElementById("gb-visual-overlay");
     
     if (!webglCanvas) return;
 
-    // Create a temporary hidden offscreen canvas to merge both layers cleanly
+    // Create our temporary canvas to flatten both images together
     const exportCanvas = document.createElement("canvas");
     exportCanvas.width = webglCanvas.width;
     exportCanvas.height = webglCanvas.height;
     const ctx = exportCanvas.getContext("2d");
 
-    // 1. Draw the underlying Game Boy filtered WebGL artwork
+    // 1. Snapshot the retro filter layer
     ctx.drawImage(webglCanvas, 0, 0);
 
-    // 2. Draw the live dialogue box vector overlay directly on top
+    // 2. Snapshot the dialogue canvas overlay layout
     if (textCanvas) {
         ctx.drawImage(textCanvas, 0, 0);
     }
 
-    // 3. Convert the merged graphic into a downloadable data URL asset
-    this.href = exportCanvas.toDataURL("image/png");
-});
+    // 3. Inject the data payload directly into the tag's clicked href handler
+    linkElement.href = exportCanvas.toDataURL("image/png");
+};
