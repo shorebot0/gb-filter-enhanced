@@ -2,7 +2,7 @@
 // メイン処理
 // ------------------------------------------------------------------------------------------------
 
-// VER CHECK 22MAY2026.1254
+// VER CHECK 22MAY2026.1407
 
 // -------------------------------------------------------------------------------------------
 // グローバルな変数
@@ -264,3 +264,28 @@ onload = function()
 		requestAnimationFrame(main_loop);
 	}
 };
+
+// --- DYNAMIC COMBINED DOWNLOAD HANDLER ---
+document.getElementById("download_link").addEventListener("click", function(e) {
+    const webglCanvas = document.getElementById("canvas_main");
+    const textCanvas = document.getElementById("gb-visual-overlay");
+    
+    if (!webglCanvas) return;
+
+    // Create a temporary hidden offscreen canvas to merge both layers cleanly
+    const exportCanvas = document.createElement("canvas");
+    exportCanvas.width = webglCanvas.width;
+    exportCanvas.height = webglCanvas.height;
+    const ctx = exportCanvas.getContext("2d");
+
+    // 1. Draw the underlying Game Boy filtered WebGL artwork
+    ctx.drawImage(webglCanvas, 0, 0);
+
+    // 2. Draw the live dialogue box vector overlay directly on top
+    if (textCanvas) {
+        ctx.drawImage(textCanvas, 0, 0);
+    }
+
+    // 3. Convert the merged graphic into a downloadable data URL asset
+    this.href = exportCanvas.toDataURL("image/png");
+});
